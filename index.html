@@ -120,6 +120,8 @@
       padding-left: 0;
       margin: 0;
       list-style: none;
+      min-height: 120px; /* Adjust as needed */
+      overflow-y: auto;
     }
     .color-zones {
       display: flex;
@@ -222,6 +224,7 @@
       font-size: 15px;
       overflow-y: auto;
       max-height: 300px;
+      min-height: 120px; /* Matches log or adjust as needed */
     }
     .score-entry {
       display: flex;
@@ -278,6 +281,8 @@
 
       <h3>📜 Roll History</h3>
       <ul id="roll-log"></ul>
+      <button id="stop-game-button">🛑 Stop Game</button>
+      <button id="reset-game-button">🔁 Reset Game</button>
     </div>
 
   </div>
@@ -325,6 +330,19 @@
 
   let rollCount = 0;
   let players = [];
+  let gameStopped = false;
+
+  function stopGame() {
+  if (gameStopped) return; // Prevent multiple stops
+  gameStopped = true;
+
+  // Optionally disable roll button (if it has ID 'roll-button')
+  const rollBtn = document.getElementById("roll-button");
+  if (rollBtn) rollBtn.disabled = true;
+
+  alert("Game stopped.");
+  declareWinner(); // 🎉 show winner
+}
 
   // Create color zones dynamically
   function createColorZones() {
@@ -569,6 +587,49 @@ function declareWinner() {
       music.pause();
     }
   }
+  function resetGame() {
+  // Reset all global variables
+  rollCount = 0;
+  players = [];
+  gameStopped = false;
+
+  // Reset dice
+  diceElements.forEach(dice => {
+    dice.style.backgroundColor = "#fff";
+    dice.style.color = "#000";
+    dice.textContent = "?";
+  });
+
+  // Clear result text and roll log
+  result.textContent = "";
+  rollLog.innerHTML = "";
+
+  // Clear player elements
+  unassignedPlayers.innerHTML = "";
+
+  // Clear all color zones
+  colors.forEach(color => {
+    const zone = document.getElementById(`zone-${color.name.toLowerCase()}`);
+    if (zone) zone.innerHTML = `<h3>${color.name}</h3>`;
+  });
+
+  // Clear scoreboard
+  scoreboard.innerHTML = "";
+
+  // Re-enable roll button
+  const rollBtn = document.getElementById("roll-button");
+  if (rollBtn) rollBtn.disabled = false;
+
+  // Focus input field
+  addPlayerInput.value = "";
+  addPlayerInput.focus();
+
+  alert("Game has been reset.");
+}
+
+  document.getElementById("reset-game-button").addEventListener("click", resetGame);
+  document.getElementById("stop-game-button").addEventListener("click", stopGame);
+  console.log(`${player.name} has been eliminated.`);
 
 </script>
 
