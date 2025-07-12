@@ -346,22 +346,17 @@
 }
 
   // Create color zones dynamically
-function createColorZones() {
-  colorZonesContainer.innerHTML = ''; // Clear previous zones to ensure fresh creation
-
-  colors.forEach(color => {
-    const zone = document.createElement("div");
-    zone.classList.add("zone", color.class);
-    zone.id = `zone-${color.name.toLowerCase()}`;
-    zone.innerHTML = `<h3>${color.name}</h3>`; // Each zone has a header
-
-    // Add event listeners for drag and drop
-    zone.addEventListener("dragover", e => e.preventDefault());
-    zone.addEventListener("drop", handleDrop);
-
-    colorZonesContainer.appendChild(zone);
-  });
-}
+  function createColorZones() {
+    colors.forEach(color => {
+      const zone = document.createElement("div");
+      zone.classList.add("zone", color.class);
+      zone.id = `zone-${color.name.toLowerCase()}`;
+      zone.innerHTML = `<h3>${color.name}</h3>`;
+      zone.addEventListener("dragover", e => e.preventDefault());
+      zone.addEventListener("drop", handleDrop);
+      colorZonesContainer.appendChild(zone);
+    });
+  }
 
   function addPlayer(name) {
     const playerId = `player-${Date.now()}`;
@@ -415,7 +410,12 @@ function createColorZones() {
     const index = Math.floor(Math.random() * colors.length);
     return colors[index];
   }
+// Number of rounds
 function rollDice() {
+  // if (rollCount >= 10) {
+  //   alert("Game over! Please refresh to play again.");
+  //   return;
+  // }
   const intervals = [];
   const rollDuration = 5000; // 2.5 seconds rolling
   const rollInterval = 50;   // Update dice color every 50ms
@@ -451,11 +451,8 @@ function rollDice() {
     logItem.textContent = `Roll ${rollCount}: ${finalColors.map(c => c.name).join(", ")}`;
     rollLog.prepend(logItem);
 
-    // Evaluate player rewards after coins have been updated
+    // Evaluate player rewards
     const rolledColorNames = finalColors.map(c => c.name.toLowerCase());
-    evaluateRewards(rolledColorNames);
-  }, rollDuration);
-}
 
     const coinChanges = {}; // Track per-player change
 
@@ -525,48 +522,55 @@ function declareWinner() {
 }
 
 
-function evaluateRewards(rolledColorNames) {
-  const coinChanges = {}; // Track per-player change
+  function evaluateRewards(finalColors) {
+    const rolledColorNames = finalColors.map(c => c.name.toLowerCase());
+    const coinChanges = {};
 
-  colors.forEach(color => {
-    const zone = document.getElementById(`zone-${color.name.toLowerCase()}`);
-    if (!zone) return;
+    colors.forEach(color => {
+      const zone = document.getElementById(`zone-${color.name.toLowerCase()}`);
+      if (!zone) return;
 
-    const zonePlayers = zone.querySelectorAll(".player");
-    zonePlayers.forEach(playerEl => {
-      const playerId = playerEl.id;
-      const player = players.find(p => p.id === playerId);
-      if (!player) return;
+      const zonePlayers = zone.querySelectorAll(".player");
+      zonePlayers.forEach(playerEl => {
+        const playerId = playerEl.id;
+        const player = players.find(p => p.id === playerId);
+        if (!player) return;
 
-      const matchCount = rolledColorNames.filter(c => c === color.name.toLowerCase()).length;
-      const delta = matchCount > 0 ? matchCount : -1;
+        const matchCount = rolledColorNames.filter(c => c === color.name.toLowerCase()).length;
+        const delta = matchCount > 0 ? matchCount : -1;
 
-      // Prevent negative coins
-      if (delta === -1 && player.coins <= 0) return;
 
-      const oldCoins = player.coins;
-      player.coins += delta;
+        if (delta === -1 && player.coins <= 0) return; // don't go negative
 
-      if (player.coins <= 0) {
-        // Remove player from DOM and players array
-        const playerElToRemove = document.getElementById(playerId);
-        if (playerElToRemove) playerElToRemove.remove();
-        players = players.filter(p => p.id !== playerId); // Remove player from array
-      }
+        const oldCoins = player.coins;
+        player.coins += delta;
 
-      // Update the coin display
-      const coinSpan = document.getElementById(`coins-${playerId}`);
-      if (coinSpan) {
-        coinSpan.textContent = `${player.coins} 🪙`;
-        coinSpan.style.color = player.coins <= 0 ? "red" : "gold";
-      }
+        if (player.coins <= 0) {
+          const playerElToRemove = document.getElementById(playerId);
+          if (playerElToRemove) playerElToRemove.remove();
 
-      coinChanges[playerId] = (coinChanges[playerId] || 0) + (player.coins - oldCoins);
+          players = players.filter(p => p.id !== playerId);
+        } else {
+          const coinSpan = document.getElementById(`coins-${playerId}`);
+          if (coinSpan) {
+            coinSpan.textContent = `${player.coins} 🪙`;
+            coinSpan.style.color = "gold";
+          }
+        }
+
+        // Update player's coin display
+        const coinSpan = document.getElementById(`coins-${playerId}`);
+        if (coinSpan) {
+          coinSpan.textContent = `${player.coins} 🪙`;
+          coinSpan.style.color = player.coins <= 0 ? "red" : "gold";
+        }
+
+        coinChanges[playerId] = (coinChanges[playerId] || 0) + delta;
+      });
     });
-  });
 
-  updateScoreboard(coinChanges);
-}
+    updateScoreboard(coinChanges);
+  }
   function updateScoreboard(coinChanges) {
   // Clear scoreboard and rebuild
   scoreboard.innerHTML = "";
@@ -589,7 +593,7 @@ function evaluateRewards(rolledColorNames) {
     scoreboard.appendChild(entry);
   });
 }
-  
+
   // Initialize zones on page load
   createColorZones();
 
@@ -608,7 +612,7 @@ function evaluateRewards(rolledColorNames) {
       music.pause();
     }
   }
-function resetGame() {
+  function resetGame() {
   // Reset all global variables
   rollCount = 0;
   players = [];
@@ -628,8 +632,11 @@ function resetGame() {
   // Clear player elements
   unassignedPlayers.innerHTML = "";
 
-  // Recreate color zones (this ensures they are freshly built)
-  createColorZones();
+  // Clear all color zones
+  colors.forEach(color => {
+    const zone = document.getElementById(`zone-${color.name.toLowerCase()}`);
+    if (zone) zone.innerHTML = `<h3>${color.name}</h3>`;
+  });
 
   // Clear scoreboard
   scoreboard.innerHTML = "";
