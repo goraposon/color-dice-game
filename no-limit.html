@@ -410,12 +410,7 @@
     const index = Math.floor(Math.random() * colors.length);
     return colors[index];
   }
-// Number of rounds
 function rollDice() {
-  // if (rollCount >= 10) {
-  //   alert("Game over! Please refresh to play again.");
-  //   return;
-  // }
   const intervals = [];
   const rollDuration = 5000; // 2.5 seconds rolling
   const rollInterval = 50;   // Update dice color every 50ms
@@ -451,8 +446,11 @@ function rollDice() {
     logItem.textContent = `Roll ${rollCount}: ${finalColors.map(c => c.name).join(", ")}`;
     rollLog.prepend(logItem);
 
-    // Evaluate player rewards
+    // Evaluate player rewards after coins have been updated
     const rolledColorNames = finalColors.map(c => c.name.toLowerCase());
+    evaluateRewards(rolledColorNames);
+  }, rollDuration);
+}
 
     const coinChanges = {}; // Track per-player change
 
@@ -522,55 +520,48 @@ function declareWinner() {
 }
 
 
-  function evaluateRewards(finalColors) {
-    const rolledColorNames = finalColors.map(c => c.name.toLowerCase());
-    const coinChanges = {};
+function evaluateRewards(rolledColorNames) {
+  const coinChanges = {}; // Track per-player change
 
-    colors.forEach(color => {
-      const zone = document.getElementById(`zone-${color.name.toLowerCase()}`);
-      if (!zone) return;
+  colors.forEach(color => {
+    const zone = document.getElementById(`zone-${color.name.toLowerCase()}`);
+    if (!zone) return;
 
-      const zonePlayers = zone.querySelectorAll(".player");
-      zonePlayers.forEach(playerEl => {
-        const playerId = playerEl.id;
-        const player = players.find(p => p.id === playerId);
-        if (!player) return;
+    const zonePlayers = zone.querySelectorAll(".player");
+    zonePlayers.forEach(playerEl => {
+      const playerId = playerEl.id;
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
 
-        const matchCount = rolledColorNames.filter(c => c === color.name.toLowerCase()).length;
-        const delta = matchCount > 0 ? matchCount : -1;
+      const matchCount = rolledColorNames.filter(c => c === color.name.toLowerCase()).length;
+      const delta = matchCount > 0 ? matchCount : -1;
 
+      // Prevent negative coins
+      if (delta === -1 && player.coins <= 0) return;
 
-        if (delta === -1 && player.coins <= 0) return; // don't go negative
+      const oldCoins = player.coins;
+      player.coins += delta;
 
-        const oldCoins = player.coins;
-        player.coins += delta;
+      if (player.coins <= 0) {
+        // Remove player from DOM and players array
+        const playerElToRemove = document.getElementById(playerId);
+        if (playerElToRemove) playerElToRemove.remove();
+        players = players.filter(p => p.id !== playerId); // Remove player from array
+      }
 
-        if (player.coins <= 0) {
-          const playerElToRemove = document.getElementById(playerId);
-          if (playerElToRemove) playerElToRemove.remove();
+      // Update the coin display
+      const coinSpan = document.getElementById(`coins-${playerId}`);
+      if (coinSpan) {
+        coinSpan.textContent = `${player.coins} 🪙`;
+        coinSpan.style.color = player.coins <= 0 ? "red" : "gold";
+      }
 
-          players = players.filter(p => p.id !== playerId);
-        } else {
-          const coinSpan = document.getElementById(`coins-${playerId}`);
-          if (coinSpan) {
-            coinSpan.textContent = `${player.coins} 🪙`;
-            coinSpan.style.color = "gold";
-          }
-        }
-
-        // Update player's coin display
-        const coinSpan = document.getElementById(`coins-${playerId}`);
-        if (coinSpan) {
-          coinSpan.textContent = `${player.coins} 🪙`;
-          coinSpan.style.color = player.coins <= 0 ? "red" : "gold";
-        }
-
-        coinChanges[playerId] = (coinChanges[playerId] || 0) + delta;
-      });
+      coinChanges[playerId] = (coinChanges[playerId] || 0) + (player.coins - oldCoins);
     });
+  });
 
-    updateScoreboard(coinChanges);
-  }
+  updateScoreboard(coinChanges);
+}
   function updateScoreboard(coinChanges) {
   // Clear scoreboard and rebuild
   scoreboard.innerHTML = "";
@@ -593,7 +584,7 @@ function declareWinner() {
     scoreboard.appendChild(entry);
   });
 }
-
+  
   // Initialize zones on page load
   createColorZones();
 
