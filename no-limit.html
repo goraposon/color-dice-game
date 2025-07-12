@@ -346,17 +346,22 @@
 }
 
   // Create color zones dynamically
-  function createColorZones() {
-    colors.forEach(color => {
-      const zone = document.createElement("div");
-      zone.classList.add("zone", color.class);
-      zone.id = `zone-${color.name.toLowerCase()}`;
-      zone.innerHTML = `<h3>${color.name}</h3>`;
-      zone.addEventListener("dragover", e => e.preventDefault());
-      zone.addEventListener("drop", handleDrop);
-      colorZonesContainer.appendChild(zone);
-    });
-  }
+function createColorZones() {
+  colorZonesContainer.innerHTML = ''; // Clear previous zones to ensure fresh creation
+
+  colors.forEach(color => {
+    const zone = document.createElement("div");
+    zone.classList.add("zone", color.class);
+    zone.id = `zone-${color.name.toLowerCase()}`;
+    zone.innerHTML = `<h3>${color.name}</h3>`; // Each zone has a header
+
+    // Add event listeners for drag and drop
+    zone.addEventListener("dragover", e => e.preventDefault());
+    zone.addEventListener("drop", handleDrop);
+
+    colorZonesContainer.appendChild(zone);
+  });
+}
 
   function addPlayer(name) {
     const playerId = `player-${Date.now()}`;
@@ -603,7 +608,7 @@ function evaluateRewards(rolledColorNames) {
       music.pause();
     }
   }
-  function resetGame() {
+function resetGame() {
   // Reset all global variables
   rollCount = 0;
   players = [];
@@ -623,11 +628,8 @@ function evaluateRewards(rolledColorNames) {
   // Clear player elements
   unassignedPlayers.innerHTML = "";
 
-  // Clear all color zones
-  colors.forEach(color => {
-    const zone = document.getElementById(`zone-${color.name.toLowerCase()}`);
-    if (zone) zone.innerHTML = `<h3>${color.name}</h3>`;
-  });
+  // Recreate color zones (this ensures they are freshly built)
+  createColorZones();
 
   // Clear scoreboard
   scoreboard.innerHTML = "";
